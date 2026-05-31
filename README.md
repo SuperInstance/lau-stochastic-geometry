@@ -1,44 +1,64 @@
 # lau-stochastic-geometry
 
-Stochastic geometry for agent uncertainty — Poisson processes, random tessellations, and spatial statistics.
+Spatial randomness modeled rigorously: Poisson point processes, Voronoi tessellations, Delaunay triangulations, percolation thresholds, and Gaussian random fields with Matérn covariance.
 
-## Features
+Drop points randomly in the ocean, draw Voronoi cells, and you've mapped every hermit crab's territory.
 
-- **Poisson point processes**: Homogeneous and inhomogeneous (with Lewis-Shedler thinning)
-- **Boolean model**: Random grains (disks) on a Poisson process, with configurable grain distributions
-- **Voronoi tessellation**: Sutherland-Hodgman clipping algorithm
-- **Delaunay triangulation**: Bowyer-Watson incremental insertion
-- **Ripley's K-function and L-function**: Spatial summary statistics with edge correction
-- **Minkowski functionals**: Area, perimeter, and Euler characteristic for random sets
-- **Percolation detection**: Connected component analysis and threshold detection
-- **Gaussian random fields**: Matérn covariance (with Bessel function computation)
-- **Agent uncertainty**: Model observations as spatial point patterns, confidence regions as random sets
+## The math in 60 seconds
 
-## Usage
+A **Poisson point process** places N points in region A with N ~ Poisson(λ|A|), each uniformly distributed. Build on this:
+
+- **Boolean model:** grow random grains around each point — coverage fraction, connectivity
+- **Voronoi tessellation:** partition space into cells nearest to each point
+- **Delaunay triangulation:** dual of Voronoi — connect points whose cells share an edge
+- **Ripley's K-function:** K(r) = λ⁻¹E[# points within r of a typical point] — detects clustering
+- **Minkowski functionals:** area, perimeter, Euler characteristic of random sets
+- **Percolation:** does an infinite connected cluster form? Critical intensity λ_c
+- **Matérn fields:** Gaussian random fields with covariance C(r) = σ²2^(1-ν)/Γ(ν)(r/ℓ)^νK_ν(r/ℓ)
+
+References: Chiu, Stoyan, Kendall & Mecke, *Stochastic Geometry and its Applications* (2013)
+
+## Quick start
 
 ```rust
-use lau_stochastic_geometry::*;
+use lau_stochastic_geometry::{
+    PoissonProcess, VoronoiTessellation, RipleysK, GaussianRandomField
+};
 
-// Create a homogeneous Poisson point process
-let window = poisson::Window::Rect { xmin: 0.0, xmax: 10.0, ymin: 0.0, ymax: 10.0 };
-let ppp = HomogeneousPoisson::new(1.0, window.clone());
-let mut rng = rand::thread_rng();
-let points = ppp.sample(&mut rng);
+// Homogeneous Poisson process in [0,1]² with intensity 50
+let pp = PoissonProcess::homogeneous(50.0, 2);
+let points = pp.sample();
 
-// Compute Ripley's K-function
-let k = RipleysK::new(points.clone(), window.clone());
-let k_val = k.compute(1.0); // K(1.0)
+// Voronoi tessellation
+let voronoi = VoronoiTessellation::from_points(&points);
+let cells = voronoi.cells();
+let avg_area = cells.iter().map(|c| c.area()).sum::<f64>() / cells.len() as f64;
 
-// Build a Boolean model
-let bm = BooleanModel::new(ppp, boolean_model::GrainDistribution::Constant(0.5));
-let grains = bm.sample(&mut rng);
-let coverage = bm.coverage_fraction();
+// Ripley's K-function (border-corrected)
+let k = RipleysK::compute(&points, 0.5, 1.0);
+// Under CSR: K(r) = πr²
 
-// Agent uncertainty analysis
-let au = AgentUncertainty::new(window);
-let report = au.analyze(&observations, &mut rng, 50);
+// Gaussian random field with Matérn covariance
+let field = GaussianRandomField::matern(1.0, 0.3, 0.5); // σ², ν, ℓ
+let realization = field.sample_grid(32, 32);
 ```
 
-## License
+## Key types
 
-MIT
+| Type | What it is |
+|------|-----------|
+| `PoissonProcess` | Homogeneous or inhomogeneous PPP with Lewis-Shedler thinning |
+| `VoronoiTessellation` | Cells clipped to bounded domain, with area/perimeter |
+| `DelaunayTriangulation` | Bowyer-Watson algorithm with circumcircle validation |
+| `RipleysK` | Border-corrected spatial statistics K(r) and L(r) |
+| `MinkowskiFunctionals` | Area, perimeter, Euler characteristic of random sets |
+| `Percolation` | Connected component analysis, critical intensity search |
+| `GaussianRandomField` | Matérn covariance with Cholesky simulation |
+
+## Contributing
+
+[Open an issue](https://github.com/SuperInstance/lau-stochastic-geometry/issues) or PR. Natural extensions:
+
+- Gibbs point processes (pairwise interaction)
+- Shot-noise Cox processes
+- Applications to sensor networks and spatial ML
