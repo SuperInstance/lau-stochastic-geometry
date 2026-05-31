@@ -1,3 +1,10 @@
+#![deny(unsafe_code)]
+#![allow(
+    clippy::needless_range_loop,
+    clippy::type_complexity,
+    clippy::ptr_arg,
+    clippy::excessive_precision,
+)]
 //! # lau-stochastic-geometry
 //!
 //! Stochastic geometry for agent uncertainty quantification.

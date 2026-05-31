@@ -188,7 +188,7 @@ fn line_intersection(pi: &Point2D, pj: &Point2D, di: f64, dj: f64) -> Option<Poi
         return None;
     }
     let t = di / (di - dj);
-    if t < -1e-10 || t > 1.0 + 1e-10 {
+    if !(-1e-10..=1.0 + 1e-10).contains(&t) {
         return None;
     }
     Some(Point2D::new(

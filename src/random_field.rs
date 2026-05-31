@@ -109,8 +109,7 @@ impl GaussianRandomField {
                 let normal = Normal::new(0.0, 1.0).unwrap();
                 let z: Vec<f64> = (0..total).map(|_| rng.sample(normal)).collect();
                 let z_vec = nalgebra::DVector::from_vec(z);
-                let result = chol.l() * z_vec;
-                result
+                chol.l() * z_vec
             }
             None => {
                 // Fallback: add nugget for numerical stability
